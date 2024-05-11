@@ -1,0 +1,113 @@
+  ---
+title: "ECON 588 - Project Proposal"
+author: "Sam Lee"
+format: pdf
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+# A Theoretical Framework for Estimating Regression Coefficients with Endogenous Additive Team Productivity Effects
+
+## Introduction
+
+For my project I will be taking a theoretical approach on estimating consistent estimators in a poisson regression when covariates are obscured by endogenous "teamwork effects". In labor economics, it is often of interest to be able to estimate a worker's output or productivity given their previous performance. This is important on a microeconomic level from a firm's perspective and in terms of measuring macroeconomic worker productivity.
+
+Most baseline worker productivity functions in economics can be modeled as a function of a worker's labor and capital. However, in this framework that I will shortly hereafter provide, I propose a scenario where a worker's production function is dependent upon another worker's productivity. Thus, in order to model the productivity of any individual worker, it is imperative to consider the productive influence that the worker has had on other workers and vice versa. The goal of this paper is to show that we cannot acheive a consistent estimator without accounting for the endogeneity in the productivity covariates due to influence of productivity influence by coworkers.
+
+## Existing Literature
+
+Notably, the existing research on this topic is scarce. Estimating "peer-effects" in an econometric framework is difficult. Notoriously, as noted by some economists including our own Dr. Frandsen, the issue of pinpointing a "peer-effect" comes down to the *barking dog problem*--the idea that negative externalities as simple as having your a noisy neighbor dog can lead to confounding in the effect of interest. However, rather than a peer-effect, I seek to estimate a productivity effect and invoke strong assumptions to identify an econometric framework that hasn't seen much light in the literature.
+
+In regards to this specific framework, one paper in 2009[^1], analyzes teamwork effects by using fixed effects, though the endogeneity is much more prevalent in an induced simulation design in a paper like mine. This is absent in Bell and Carruth's paper.
+
+[^1]: [Bell, B. R., & Carruth, A. L. (2009). The effects of multi-skilling and team-based work on employee performance. Human Resource Management Journal, 19(3), 307-329.](https://www.researchgate.net/publication/276177670_The_impact_of_multi-skilling_on_personnel_scheduling_in_the_service_sector_A_retail_industry_case)
+
+## Data-Generating Process
+
+Suppose a set of workers work interdependently within a firm and are expected to complete a set of tasks. Assume that on any $k$th task, a worker $i$ can be randomly paired to work with another worker $j$. For the purposes of this simulation and model, I assume that every task is completed with exactly two workers, though, with a bit of work, this model could be extended more broadly.
+
+The critical assumption that I assume in the data-generating process and in estimation is that each true *worker effect* is linearly **additive**. This means that if worker $i$ adds on average $c$ more units of production, then this worker effect holds regardless of whatever other worker he or she is working with ($c$ is a constant, in other words), and the worker effects for worker $i$ and worker $j$ can thus be summed together.
+
+Suppose further that we are interested in outcome of interest, $Y$--specific to individual $i$. This could something comparable to a qualifying exam, performance metric, or simply another task of interest. In my model, I model $Y$ s.t.
+
+$$
+Y_{ij} \sim Pois((\text{TASK1}_{ij}+\text{TASK2}_{ij}+\text{TASK3}_{ij})'\delta)
+$$
+
+Where $\delta$ is simply a vector of auto correlations--I assume that $\text{TASK1}...\text{TASK}_k$ are correlated such that the productivity/performance on the most 'recent' task should have the most influence on $Y_{ij}$.
+
+Hence, an estimating equation can formulated for the poisson random variable, $Y_{ij}$
+
+$$
+Y_{ij} = exp\{\alpha+\beta_1\text{TASK1}_{ij}+\beta_2\text{TASK2}_{ij}+...+\beta_k\text{TASK}_{kij}+x_i'\gamma+x_j'\phi+\epsilon_{ij}\}
+$$
+Where $x_i$ and $x_j$ are the set of covariates for workers $i$ and $j$.
+
+I create a DGP where an arbitrary number of workers, trials (number of times each worker performs each task), and $k$ # of tasks.
+
+{{< pagebreak >}}
+
+```{r echo=F}
+n.workers <- 4
+n.trials <- 2
+
+i.effects <- rnorm(n.workers, mean=100, sd=20)
+
+tasks <- c("TASK1", "TASK2", "TASK3")
+
+random_pairs <- function(task, n, workers){
+  index = as.data.frame(
+    sapply(1:workers, function(x){
+      subset = 1:workers
+      subset = subset[subset != x]
+      sample(subset, size=n, replace = T)
+    }) %>% t()
+  )
+  index$i = 1:workers
+  index %>% 
+    pivot_longer(cols=1:2, values_to = "j") %>%
+    select(-name) %>% setNames(c(str_c(task, "_i"), str_c(task, "_j")))
+}
+
+tasks.df <- random_pairs(tasks[1], n.trials, n.workers)
+for(i in 2:length(tasks)){
+  tasks.df <- cbind(tasks.df, random_pairs(tasks[i], n.trials, n.workers))
+}
+
+task.effect <- function(i,j){
+  i.effect = i.effects[i]
+  j.effect = i.effects[j]
+  return(round(i.effect+j.effect+rnorm(1,sd=10)))
+}
+combined.effects <- c()
+for(task in tasks){
+  tasks.i = tasks.df %>% pull(str_c(task, "_i"))
+  tasks.j = tasks.df %>% pull(str_c(task, "_j"))
+  for(k in 1:length(tasks.i)){
+    combined.effects <- c(combined.effects, task.effect(tasks.i[k], tasks.j[k]))
+  }
+  tasks.df[,task] <- combined.effects
+  combined.effects <- c()
+}
+
+delta = matrix(c(0.25, 0.5, 0.9), nrow=length(tasks))
+y = rpois(nrow(tasks.df), as.matrix(tasks.df[,tasks])%*%delta)
+tasks.df$Y = y
+
+tasks.df %>% mutate(
+  i = TASK1_i
+) %>%
+  select(-ends_with("_i")) %>%
+  select(i, starts_with("TASK"), Y) %>% knitr::kable()
+```
+
+In this generation, I used trials = 2, k = 3, and number of workers = 4. As stated earlier, I assume that each worker has an independent additive productivity effect. In my DGP, this is generated from a Normal distribution with mean = 100 and sd = 20. The task variables simulate the productive output, or in other words, how many units were produced given workers $i$ and $j$ worked together. A random Normal vector of error terms ($\epsilon_{ij}$) were added to each task (with mean = 0 and sd = 10). A correlation vector $\delta = (0.25\quad0.5\quad0.9)^T$ was specified in the poisson generation of $Y_{ij}$.
+
+## Econometric Frameworks for Estimation
+
+I hope to show that simply adjusting for controls or fixed effects in $x_i$ and $x_j$ is not enough to yield consistent coefficients for my $\beta$ coefficient vector due to the endogeneity it has with teamwork-based productivity effects.
+
+I will use both extremum estimation for poisson regression and GMM estimation for structural equation modeling. I will use extremum estimation for poisson regression to include fixed effects in order to estimate the $\beta$ coefficient vector ignoring its endogeneity. I will then show how this differs using structural equation modeling with GMM estimation to solve for the endogeneity.

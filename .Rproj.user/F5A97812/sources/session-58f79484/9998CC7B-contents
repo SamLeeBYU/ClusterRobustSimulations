@@ -1,0 +1,55 @@
+library(lubridate)
+library(tidyverse)
+
+years <- 2010:2022
+files <- str_c("Data/population/ACSST5Y", years, ".S0101-Data.csv")
+pop <- read_csv(files[1], skip=1)
+population <- pop %>% select(-Geography) %>%
+  mutate(across(everything(), as.character)) %>%
+  pivot_longer(2:(length(colnames(pop))-1), names_to = "metric", 
+               values_to = "population") %>%
+  filter(metric == "Total!!Estimate!!Total population") %>%
+  mutate(Year = 2010)
+for(i in 2:length(files)){
+  pop <- read_csv(files[i], skip=1)
+  population <- population %>% rbind(pop %>% select(-Geography) %>%
+    mutate(across(everything(), as.character)) %>%
+    pivot_longer(2:(length(colnames(pop))-1), names_to = "metric", 
+                 values_to = "population") %>%
+    filter(metric == "Total!!Estimate!!Total population" |
+           metric == "Estimate!!Total!!Total population") %>%
+    mutate(
+      Year = years[i]
+    ))
+  if(years[i] == last(years)){
+    population <- population %>%
+      select(-metric) %>%
+      mutate(
+        population = as.numeric(population)
+      )
+  }
+}
+
+zips = population$`Geographic Area Name` %>% unique() %>% setdiff("Chicago city, Illinois")
+population.cleaned = population %>% filter(`Geographic Area Name` %in% zips)
+population.cleaned %>% group_by(Year) %>%
+  summarize(
+    total_population = sum(population)
+  ) %>%
+  ggplot()+
+  geom_line(aes(x=Year, y=total_population))
+
+population.cleaned %>% ggplot() +
+  geom_line(aes(x=Year, y=population, color=`Geographic Area Name`))
+
+#Assume unemployment rate in Chicago's 11th police district is proportional
+#to the unemployment rate in the Chicago area
+unem <- read_csv("Data/chicago-unemployment.csv") %>%
+  select(Year, Label, Value) %>%
+  mutate(
+    Label = ym(Label),
+    Month = month.name[month(Label)]
+  )
+unem %>% ggplot(aes(x=Label, y=Value))+
+  geom_point()+
+  geom_line()
