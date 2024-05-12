@@ -30,7 +30,7 @@ Sam Lee
 }
 
 \seealso{
-\link{https://github.com/SamLeeBYU/ClusterRobustSimulations/test.R}}
+\link{https://github.com/SamLeeBYU/ClusterRobustSimulations/test.R}
 }
 \examples{
 ##---- Should be DIRECTLY executable !! ----
@@ -38,7 +38,7 @@ Sam Lee
 ##--	or do  help(data=index)  for the standard data sets.
 
 ## The function is currently defined as
-function (x) 
+function (x)
 {
   }
 }

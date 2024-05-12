@@ -6,13 +6,13 @@ require("expm")
 #Used for pinv Pseudo-inverse (Moore-Penrose generalized inverse) function
 require("pracma")
 
-popval = read.csv("main.popval2.csv", row.names=1)
+popval = read.csv("R/popval.csv", row.names=1)
 
 #path="D:/Research Project/ClusterManyCov/Simulation and Application 2208/Simulation/"
 
 #--------------------------------------------
 #Setup sample size for cluster design
-# n=n_prime represents homogeneous cluster size while different values represent 
+# n=n_prime represents homogeneous cluster size while different values represent
 # heterogeneous cases. N represents total sample size and q represents the number
 # of clusters.
 cluster.size<-function(q,n,n_prime){
@@ -22,18 +22,18 @@ cluster.size<-function(q,n,n_prime){
     N=n*q;
     n_j = c(rep(n,q));
   } else {
-    n_j = c(rep(n,each=half.1),rep(n_prime,each=half.2));    
+    n_j = c(rep(n,each=half.1),rep(n_prime,each=half.2));
     N = sum(n_j);
   }
   return(N)
 }
 
 #Setup function to build dependent vectors and errors based on random factors#
-# Ng represents the cluster size for each structure, J is the number of 
-# unobservable random factors rho is the correlation coefficients and l is the 
-# selected parameter. The difference is that covariates mainly follow uniform 
-# distribution while the error term evolves from a standard normal. Further, 
-# although we use J to represent both random factors, the dimension of J is 
+# Ng represents the cluster size for each structure, J is the number of
+# unobservable random factors rho is the correlation coefficients and l is the
+# selected parameter. The difference is that covariates mainly follow uniform
+# distribution while the error term evolves from a standard normal. Further,
+# although we use J to represent both random factors, the dimension of J is
 # allowed to be different between errors and regressors.
 reg.dep<-function(Ng,J,rho,l){
   lambda = rep(0,J)
@@ -85,17 +85,17 @@ gen.data <-function(q,qx,n,n_prime,nx,Jx,Ju,rho,l,m,beta,K.i,K,varkappa.v=NULL,v
   #         - l: weighted parameters in D.G.P
   #         - K: the number of covariates
   #         - m: sets the dgp(1,2 for independent covariates with homo and hete
-  #                           cluster size;3,4 for dependent covariates with 
+  #                           cluster size;3,4 for dependent covariates with
   #                           homo and hete cluster size)
   #------------------------------------------------------------------
   # RETURNS: df = (cluster, unit, Yij, Zij)
-  #   Clust Unit Yij       Zij      
-  #1    1    1  
-  #2    1    2 
-  #3    1    3  
-  #4    1    4  
-  #5    2    1 
-  #6    2    2  
+  #   Clust Unit Yij       Zij
+  #1    1    1
+  #2    1    2
+  #3    1    3
+  #4    1    4
+  #5    2    1
+  #6    2    2
   #------------------------------------------------------------------
   #-------------------------------------------------------------------
   #Useful Functions
@@ -105,16 +105,16 @@ gen.data <-function(q,qx,n,n_prime,nx,Jx,Ju,rho,l,m,beta,K.i,K,varkappa.v=NULL,v
   # Setup sample sizes per cluster
   half.1= floor(q/2);
   half.2= q-floor(q/2);
-  
+
   if (n==n_prime){
     N=n*q;
     n_j = c(rep(n,q));
   } else {
-    n_j = c(rep(n,each=half.1),rep(n_prime,each=half.2));    
+    n_j = c(rep(n,each=half.1),rep(n_prime,each=half.2));
     N = sum(n_j);
   }
   nx_j = c(rep(nx,qx))
-  
+
   # Cluster indicator (n>0 for n_j=n_j' - n=0 for n_j != n_j')
   if (n==n_prime){
     cluster = rep(c(1:q),each=n);
@@ -126,14 +126,14 @@ gen.data <-function(q,qx,n,n_prime,nx,Jx,Ju,rho,l,m,beta,K.i,K,varkappa.v=NULL,v
     unit    = c(unit.1,unit.2);
   }
   unitx  = rep(c(1:nx),qx)
-  
+
   # Generate regressors
   if ( m == 1 | m == 2 ){
     W = matrix(1,N,1+K); if (K>0) {
       W[,2:(K+1)] = matrix(runif(N*K,min=-1,max=1),N);
     }
   }
-  
+
   if ( m == 3 | m == 4){
     W = matrix(1,N,1+K); if (K>0) {
       for (t in 2:(K+1)){
@@ -144,31 +144,31 @@ gen.data <-function(q,qx,n,n_prime,nx,Jx,Ju,rho,l,m,beta,K.i,K,varkappa.v=NULL,v
       }
     }
   }
-  
+
   #I modified the DGP to include a generating process for a multi-dimensioned beta vector (with dimension d) - Sam Lee
   d = length(beta)
   Wg = W%*%matrix(1, ncol=d, nrow=1+K)
-  
-  
+
+
   sigma.x.fn = function(Wg) return((1+Wg^2));
   sigma.u.fn = function(Xb,Wg) return((trunc(Xb)+Wg)^2);
-  
+
   v = matrix(rnorm(N*d),N,d)
   V.HE = sqrt(varkappa.v * sigma.x.fn(Wg)) * v
   X = V.HE
-  
+
   #Generate Error terms
   Ud = matrix(0,N,d)
-  
+
   Ud[1:n_j[1],] = err.dep(n_j[1],Ju,rho,l)
   for (i in 2:q) {
     Ud[(sum(n_j[1:(i-1)])+1):sum(n_j[1:i]),] = err.dep(n_j[i],Ju,rho,l)
   }
   U = Ud + sqrt(1-l^2)*sqrt(varkappa.u*sigma.u.fn(X,Wg))*matrix(rnorm(N*d),N,d);
-  
+
   # Generate Outcome
   Y = X%*%beta + (1/d)*U%*%rep.int(1,d)
-  
+
   # Return the data frame
   list  = list(cluster = cluster,unit = unit, unitx = unitx, Y = Y, X = X, V.HE = V.HE, W = W, U = U);
   return(list);
@@ -181,14 +181,14 @@ star<-function(cluster, M){
   n_cumu[1]=0
   n_j = table(cluster)
   n_cumu_sqr = vector() ; n_cumu_sqr[1]=0
-  
+
   for (i in 1:G){
     n_cumu[i+1] = sum(n_j[1:i])
     n_cumu_sqr[i+1] = sum(n_j[1:i]^{2})
   }
   n_tau = n_cumu_sqr[G+1]
   M_star = matrix(0,n_tau,n_tau)
-  
+
   for (i in 1:G){
     for (j in 1:G){
       M_star[(n_cumu_sqr[i]+1):n_cumu_sqr[i+1],(n_cumu_sqr[j]+1):n_cumu_sqr[j+1]] = kronecker(M[(n_cumu[i]+1):n_cumu[i+1],(n_cumu[j]+1):n_cumu[j+1]],M[(n_cumu[i]+1):n_cumu[i+1],(n_cumu[j]+1):n_cumu[j+1]])
