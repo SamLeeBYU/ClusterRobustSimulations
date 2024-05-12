@@ -50,7 +50,7 @@ dgp = gen.data(q=q,qx=qx,n=n,n_prime=n_prime,nx=nx,Jx=Jx,Ju=Ju,rho=rho,l=l,4,bet
 crve.fit(dgp$Y,dgp$X,dgp$W,dgp$cluster, beta=beta)
 ```
 
-In the source code, I modified the DGP to allow for a beta-vector with dimension $d$, where $d \geq 0$. The original authors model the simulation assuming $d=1$. The hyperparameters specified above are parameters to generate correlation within each cluster (heterogeneous cluster sizes in this case). The `crve.fit` function will work on any specificied $Y$, $X$, and $W$ matrices regardless if there is heterogeneous correlation between the clusters.
+In the source code, I modified the DGP to allow for a beta-vector with dimension $d$, where $d \geq 0$. The original authors model the simulation assuming $d=1$. The hyperparameters specified above are parameters to generate correlation within each cluster (heterogeneous cluster sizes in this case). The `crve.fit` function will work on any specificied $Y, X,$ and $W$ matrices regardless if there is heterogeneous correlation between the clusters.
 
 ## Further explanation of the DGP Hyperparameters
 
@@ -80,7 +80,7 @@ This function estimates the covariates of interest (for the covariate matrix X) 
 
 ### Return Values
 
-`beta.hat`: A $d\times 1$ vector of the estimates of the relevant covariates pertaining to the $X$ covariate matrix.
-`V.CR`: The dxd cluster-robust variance matrix.
-`T.CR`: A $d\times 1$ vector of the t-statistic evaluated relative to the 'true' beta vector passed in (assumed 0).
+- `beta.hat`: A $d\times 1$ vector of the estimates of the relevant covariates pertaining to the $X$ covariate matrix.
+- `V.CR`: The dxd cluster-robust variance matrix.
+- `T.CR`: A $d\times 1$ vector of the t-statistic evaluated relative to the 'true' beta vector passed in (assumed 0).
 
