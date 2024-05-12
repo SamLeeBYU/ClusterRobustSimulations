@@ -1,5 +1,5 @@
 library(devtools)
-devtools::install_github("SamLeeBYU/ClusterRobustSimulations")
+devtools::install_github("SamLeeBYU/ClusterRobustSimulations/CRVE")
 
 library(CRVE)
 

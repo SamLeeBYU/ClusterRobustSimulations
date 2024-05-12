@@ -5,7 +5,7 @@ Version: 1.0
 Author: Sam Lee
 Maintainer: Sam Lee <samlee.byu@gmail.com>
 Description: This function estimates the covariates of interest (for the covariate matrix X) along with estimates for the (nuisance) covariate matrix W. 
-This function also returns the cluster-robust variance matrix (V.CR) and the appropriate t-statistic (T.CR) for a given coefficient vector (assumed 0).
+  This function also returns the cluster-robust variance matrix (V.CR) and the appropriate t-statistic (T.CR) for a given coefficient vector (assumed 0).
 License: MIT License
 Encoding: UTF-8
 LazyData: true
