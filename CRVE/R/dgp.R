@@ -6,7 +6,7 @@ require("expm")
 #Used for pinv Pseudo-inverse (Moore-Penrose generalized inverse) function
 require("pracma")
 
-popval = read.csv("R/popval.csv", row.names=1)
+popval = read.csv("data/popval.csv", row.names=1)
 
 #path="D:/Research Project/ClusterManyCov/Simulation and Application 2208/Simulation/"
 
